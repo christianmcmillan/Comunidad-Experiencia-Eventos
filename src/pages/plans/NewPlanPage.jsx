@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus, Trash2, Clock } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, BookCopy } from 'lucide-react'
 import { format } from 'date-fns'
 import usePlansStore from '../../store/usePlansStore'
 import useServiceTypesStore from '../../store/useServiceTypesStore'
@@ -12,8 +12,10 @@ function genId() {
 
 export default function NewPlanPage() {
   const navigate = useNavigate()
-  const { addPlan } = usePlansStore()
+  const { addPlan, templates } = usePlansStore()
   const { serviceTypes } = useServiceTypesStore()
+
+  const [selectedTemplateId, setSelectedTemplateId] = useState(null)
 
   const [serviceTypeId, setServiceTypeId] = useState(serviceTypes[0]?.id || '')
   const [dates, setDates] = useState([format(new Date(), 'yyyy-MM-dd')])
@@ -26,9 +28,9 @@ export default function NewPlanPage() {
 
   function handleServiceTypeChange(id) {
     setServiceTypeId(id)
+    setSelectedTemplateId(null)
     const st = serviceTypes.find((s) => s.id === id)
     if (st?.defaultTimes) {
-      const baseDate = dates[0] || format(new Date(), 'yyyy-MM-dd')
       const newTimes = st.defaultTimes.map((t) => ({
         id: genId(),
         name: t.label,
@@ -65,21 +67,24 @@ export default function NewPlanPage() {
 
   function handleSubmit(e) {
     e.preventDefault()
-    const title = selectedSt?.name || 'Nuevo Plan'
+    const template = selectedTemplateId ? templates.find(t => t.id === selectedTemplateId) : null
     const plan = {
       serviceTypeId,
-      title,
+      title: selectedSt?.name || 'Nuevo Plan',
       dates: dates.filter(Boolean),
       times: times.filter((t) => t.name),
-      order: [],
+      order: template
+        ? template.order.map((item, i) => ({ ...item, id: genId(), position: i, attachments: [] }))
+        : [],
       assignments: [],
       notes: [],
       status: 'draft',
     }
     addPlan(plan)
-    // Navigate to plans list
     navigate('/eventos')
   }
+
+  const serviceTemplates = templates.filter(t => t.serviceTypeId === serviceTypeId)
 
   return (
     <div className="max-w-2xl mx-auto p-6">
@@ -113,6 +118,44 @@ export default function NewPlanPage() {
             ))}
           </div>
         </div>
+
+        {/* Templates (if available for this service type) */}
+        {serviceTemplates.length > 0 && (
+          <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
+            <h2 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <BookCopy size={15} className="text-indigo-500" />
+              Partir de plantilla <span className="text-xs font-normal text-gray-400">(opcional)</span>
+            </h2>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedTemplateId(null)}
+                className={`p-3 rounded-lg border-2 text-left text-sm transition-all ${
+                  !selectedTemplateId
+                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700 font-medium'
+                    : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                }`}
+              >
+                En blanco
+              </button>
+              {serviceTemplates.map(t => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setSelectedTemplateId(t.id)}
+                  className={`p-3 rounded-lg border-2 text-left transition-all ${
+                    selectedTemplateId === t.id
+                      ? 'border-indigo-500 bg-indigo-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <p className="text-sm font-medium text-gray-900">{t.name}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{t.order?.length || 0} elementos</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Dates */}
         <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">

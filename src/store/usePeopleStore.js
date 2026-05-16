@@ -20,13 +20,36 @@ const usePeopleStore = create(
       ROLE_LABELS,
 
       addPerson: (person) => set((s) => ({
-        people: [...s.people, { ...person, id: genId(), teamIds: [], role: 'scheduled_viewer', createdAt: new Date().toISOString() }],
+        people: [...s.people, {
+          ...person,
+          id: genId(),
+          teamIds: [],
+          role: 'scheduled_viewer',
+          blockoutDates: [],
+          createdAt: new Date().toISOString(),
+        }],
       })),
+
       updatePerson: (id, updates) => set((s) => ({
         people: s.people.map((p) => p.id === id ? { ...p, ...updates } : p),
       })),
+
       deletePerson: (id) => set((s) => ({ people: s.people.filter((p) => p.id !== id) })),
+
       getPerson: (id) => get().people.find((p) => p.id === id),
+
+      // Blockout dates
+      addBlockout: (personId, blockout) => set((s) => ({
+        people: s.people.map((p) => p.id === personId
+          ? { ...p, blockoutDates: [...(p.blockoutDates || []), { ...blockout, id: genId() }] }
+          : p),
+      })),
+
+      removeBlockout: (personId, blockoutId) => set((s) => ({
+        people: s.people.map((p) => p.id === personId
+          ? { ...p, blockoutDates: (p.blockoutDates || []).filter((b) => b.id !== blockoutId) }
+          : p),
+      })),
     }),
     { name: 'comunidad-people' }
   )

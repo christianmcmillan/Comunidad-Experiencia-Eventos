@@ -4,7 +4,9 @@ import Dashboard from './pages/Dashboard'
 import PlansPage from './pages/plans/PlansPage'
 import PlanDetailPage from './pages/plans/PlanDetailPage'
 import PlanOrderViewPage from './pages/plans/PlanOrderViewPage'
+import PlanSignupPage from './pages/plans/PlanSignupPage'
 import NewPlanPage from './pages/plans/NewPlanPage'
+import MatrixPage from './pages/plans/MatrixPage'
 import TeamsPage from './pages/teams/TeamsPage'
 import TeamDetailPage from './pages/teams/TeamDetailPage'
 import PeoplePage from './pages/people/PeoplePage'
@@ -18,8 +20,9 @@ export default function App() {
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
-        {/* Full-screen order view — no sidebar */}
-        <Route path="eventos/:id/vista" element={<PlanOrderViewPage />} />
+        {/* Full-screen / public — no sidebar */}
+        <Route path="eventos/:id/vista"        element={<PlanOrderViewPage />} />
+        <Route path="eventos/:id/inscripcion"  element={<PlanSignupPage />} />
 
         <Route path="/" element={<AppLayout />}>
           <Route index element={<Navigate to="/dashboard" replace />} />
@@ -31,6 +34,7 @@ export default function App() {
           <Route path="planes/:id" element={<Navigate to="/eventos" replace />} />
           <Route path="equipos" element={<TeamsPage />} />
           <Route path="equipos/:id" element={<TeamDetailPage />} />
+          <Route path="equipos/matriz" element={<MatrixPage />} />
           <Route path="personas" element={<PeoplePage />} />
           <Route path="personas/:id" element={<PersonDetailPage />} />
           <Route path="canciones" element={<SongsPage />} />
@@ -38,6 +42,7 @@ export default function App() {
           <Route path="media" element={<MediaPage />} />
           <Route path="mi-agenda" element={<MySchedulePage />} />
           <Route path="mi-horario" element={<Navigate to="/mi-agenda" replace />} />
+          <Route path="matriz" element={<MatrixPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

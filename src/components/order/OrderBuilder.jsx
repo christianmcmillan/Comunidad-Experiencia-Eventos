@@ -9,10 +9,11 @@ import {
   verticalListSortingStrategy, arrayMove
 } from '@dnd-kit/sortable'
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
-import { Plus, Music2, MessageSquare, AlignLeft, Film, Clock, Maximize2 } from 'lucide-react'
+import { Plus, Music2, MessageSquare, AlignLeft, Film, Clock, Maximize2, BookCopy } from 'lucide-react'
 import usePlansStore from '../../store/usePlansStore'
 import OrderItem from './OrderItem'
 import Button from '../ui/Button'
+import Modal from '../ui/Modal'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -85,13 +86,15 @@ const ITEM_TYPES = [
 
 export default function OrderBuilder({ planId }) {
   const navigate = useNavigate()
-  const { getPlan, setOrder, addOrderItem, deleteOrderItem, duplicateOrderItem } = usePlansStore()
+  const { getPlan, setOrder, addOrderItem, deleteOrderItem, duplicateOrderItem, saveAsTemplate } = usePlansStore()
   const plan = getPlan(planId)
 
-  const [addMenuOpen, setAddMenuOpen] = useState(false)   // top-right menu
-  const [insertAfter, setInsertAfter]  = useState(null)   // id of item to insert after, or 'start'
-  const [activeId,    setActiveId]     = useState(null)
-  const [selectedTime, setSelectedTime] = useState(null)  // serviceTime id for clock display
+  const [addMenuOpen,       setAddMenuOpen]       = useState(false)
+  const [insertAfter,       setInsertAfter]       = useState(null)
+  const [activeId,          setActiveId]          = useState(null)
+  const [selectedTime,      setSelectedTime]      = useState(null)
+  const [saveTemplateOpen,  setSaveTemplateOpen]  = useState(false)
+  const [templateName,      setTemplateName]      = useState('')
   const addBtnRef = useRef()
 
   const sensors = useSensors(
@@ -191,6 +194,15 @@ export default function OrderBuilder({ planId }) {
 
         <div className="flex-1" />
 
+        {/* Save as template */}
+        <button
+          onClick={() => { setTemplateName(''); setSaveTemplateOpen(true) }}
+          className="p-1.5 rounded text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+          title="Guardar como plantilla"
+        >
+          <BookCopy size={15} />
+        </button>
+
         {/* Fullscreen / view button */}
         <button
           onClick={() => navigate(`/eventos/${planId}/vista`)}
@@ -274,6 +286,47 @@ export default function OrderBuilder({ planId }) {
 
       {/* click-outside closes add menu */}
       {addMenuOpen && <div className="fixed inset-0 z-10" onClick={() => setAddMenuOpen(false)} />}
+
+      {/* Save as template modal */}
+      <Modal open={saveTemplateOpen} onClose={() => setSaveTemplateOpen(false)} title="Guardar como plantilla">
+        <div className="space-y-4">
+          <p className="text-sm text-gray-500">
+            La plantilla guardará el orden de {order.length} elemento{order.length !== 1 ? 's' : ''}.
+            Podrás aplicarla al crear nuevos eventos.
+          </p>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Nombre de la plantilla</label>
+            <input
+              autoFocus
+              type="text"
+              value={templateName}
+              onChange={e => setTemplateName(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && templateName.trim()) {
+                  saveAsTemplate(planId, templateName.trim())
+                  setSaveTemplateOpen(false)
+                }
+              }}
+              placeholder="ej: Servicio Dominical Estándar"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-1">
+            <Button variant="secondary" onClick={() => setSaveTemplateOpen(false)}>Cancelar</Button>
+            <Button
+              onClick={() => {
+                if (templateName.trim()) {
+                  saveAsTemplate(planId, templateName.trim())
+                  setSaveTemplateOpen(false)
+                }
+              }}
+              disabled={!templateName.trim()}
+            >
+              Guardar plantilla
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

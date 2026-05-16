@@ -3,7 +3,7 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
   GripVertical, Music2, MessageSquare, AlignLeft, Film,
-  Copy, Trash2, Search, X
+  Copy, Trash2, Search, X, Paperclip, Link2, FileText, ExternalLink
 } from 'lucide-react'
 import useSongsStore from '../../store/useSongsStore'
 import usePlansStore from '../../store/usePlansStore'
@@ -48,18 +48,21 @@ export default function OrderItem({
   item, planId, startSeconds, baseMinutes, sectionTotal,
   onDelete, onDuplicate, isDragging,
 }) {
-  const { updateOrderItem } = usePlansStore()
+  const { updateOrderItem, addAttachment, removeAttachment } = usePlansStore()
   const { songs, getSong }  = useSongsStore()
   const song = item.songId ? getSong(item.songId) : null
 
-  const [editTitle,      setEditTitle]      = useState(false)
-  const [editDuration,   setEditDuration]   = useState(false)
-  const [titleVal,       setTitleVal]       = useState(item.title || '')
-  const [durVal,         setDurVal]         = useState(fmtDurInput(item.duration))
-  const [songSearch,     setSongSearch]     = useState('')
-  const [showSongPicker, setShowSongPicker] = useState(false)
-  const [showKeyPicker,  setShowKeyPicker]  = useState(false)
-  const [hovered,        setHovered]        = useState(false)
+  const [editTitle,        setEditTitle]        = useState(false)
+  const [editDuration,     setEditDuration]     = useState(false)
+  const [titleVal,         setTitleVal]         = useState(item.title || '')
+  const [durVal,           setDurVal]           = useState(fmtDurInput(item.duration))
+  const [songSearch,       setSongSearch]       = useState('')
+  const [showSongPicker,   setShowSongPicker]   = useState(false)
+  const [showKeyPicker,    setShowKeyPicker]    = useState(false)
+  const [hovered,          setHovered]          = useState(false)
+  const [showAttachments,  setShowAttachments]  = useState(false)
+  const [attUrl,           setAttUrl]           = useState('')
+  const [attName,          setAttName]          = useState('')
 
   const titleRef    = useRef()
   const durRef      = useRef()
@@ -196,7 +199,7 @@ export default function OrderItem({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-start gap-2 rounded-lg border border-gray-100 shadow-sm ${cfg.bg} ${cfg.border} group transition-shadow ${isSortDragging ? 'shadow-lg' : 'hover:shadow-sm'}`}
+      className={`relative flex items-start gap-2 rounded-lg border border-gray-100 shadow-sm ${cfg.bg} ${cfg.border} group transition-shadow ${isSortDragging ? 'shadow-lg' : 'hover:shadow-sm'}`}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -357,6 +360,88 @@ export default function OrderItem({
         {item.description && !editTitle && item.type !== 'song' && (
           <p className="text-xs text-gray-400 mt-0.5 truncate">{item.description}</p>
         )}
+
+        {/* Attachments panel */}
+        {showAttachments && (
+          <div className="mt-2 border-t border-gray-100 pt-2 pr-2">
+            {(item.attachments || []).length > 0 && (
+              <div className="space-y-1 mb-2">
+                {(item.attachments || []).map(att => (
+                  <div key={att.id} className="flex items-center gap-1.5 group/att">
+                    {att.type === 'file' ? <FileText size={11} className="text-gray-400 flex-shrink-0" /> : <Link2 size={11} className="text-indigo-400 flex-shrink-0" />}
+                    <span className="text-xs text-gray-600 truncate flex-1">{att.name}</span>
+                    {att.url && att.type !== 'file' && (
+                      <a href={att.url} target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-indigo-500">
+                        <ExternalLink size={10} />
+                      </a>
+                    )}
+                    <button
+                      onClick={() => removeAttachment(planId, item.id, att.id)}
+                      className="opacity-0 group-hover/att:opacity-100 text-gray-300 hover:text-red-500 transition-all"
+                    >
+                      <X size={10} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center gap-1">
+              <input
+                type="text"
+                value={attUrl}
+                onChange={e => setAttUrl(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && attUrl.trim()) {
+                    addAttachment(planId, item.id, { name: attName.trim() || attUrl.trim(), url: attUrl.trim(), type: 'link' })
+                    setAttUrl(''); setAttName('')
+                  }
+                }}
+                placeholder="Pegar URL (YouTube, Drive…)"
+                className="flex-1 text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+              />
+              <input
+                type="text"
+                value={attName}
+                onChange={e => setAttName(e.target.value)}
+                placeholder="Nombre"
+                className="w-24 text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+              />
+              <button
+                onClick={() => {
+                  if (attUrl.trim()) {
+                    addAttachment(planId, item.id, { name: attName.trim() || attUrl.trim(), url: attUrl.trim(), type: 'link' })
+                    setAttUrl(''); setAttName('')
+                  }
+                }}
+                className="text-xs text-indigo-500 hover:text-indigo-700 px-1.5 py-1 rounded border border-indigo-200 hover:bg-indigo-50 transition-colors"
+              >
+                + URL
+              </button>
+              {/* File upload */}
+              <label className="text-xs text-gray-400 hover:text-gray-600 px-1.5 py-1 rounded border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer">
+                + Archivo
+                <input
+                  type="file"
+                  className="hidden"
+                  onChange={e => {
+                    const file = e.target.files?.[0]
+                    if (!file) return
+                    if (file.size > 500 * 1024) {
+                      alert('Archivo muy grande (máx 500 KB). Usa un enlace URL en su lugar.')
+                      return
+                    }
+                    const reader = new FileReader()
+                    reader.onload = ev => {
+                      addAttachment(planId, item.id, { name: file.name, url: ev.target.result, type: 'file' })
+                    }
+                    reader.readAsDataURL(file)
+                    e.target.value = ''
+                  }}
+                />
+              </label>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Duration + clock time */}
@@ -386,9 +471,27 @@ export default function OrderItem({
         )}
       </div>
 
+      {/* Attachment count badge (always visible when there are attachments) */}
+      {(item.attachments || []).length > 0 && !showAttachments && (
+        <button
+          onClick={() => setShowAttachments(true)}
+          className="absolute top-2 right-16 flex items-center gap-0.5 text-xs text-indigo-400 hover:text-indigo-600"
+        >
+          <Paperclip size={10} />
+          {(item.attachments || []).length}
+        </button>
+      )}
+
       {/* Actions on hover */}
       {hovered && !isDragging && !showSongPicker && !showKeyPicker && (
         <div className="py-2 pr-2 flex items-center gap-0.5 self-center flex-shrink-0">
+          <button
+            onClick={() => setShowAttachments(v => !v)}
+            className={`p-1.5 rounded transition-colors ${showAttachments ? 'text-indigo-500 bg-indigo-50' : 'text-gray-300 hover:text-indigo-500 hover:bg-indigo-50'}`}
+            title="Adjuntos"
+          >
+            <Paperclip size={13} />
+          </button>
           <button onClick={onDuplicate} className="p-1.5 rounded text-gray-300 hover:text-gray-600 hover:bg-gray-50 transition-colors">
             <Copy size={13} />
           </button>

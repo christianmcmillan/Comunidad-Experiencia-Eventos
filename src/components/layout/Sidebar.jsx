@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Users, Music2, Film, UserCircle, Clock } from 'lucide-react'
+import { LayoutDashboard, Users, Music2, Film, UserCircle, Clock, Grid3X3 } from 'lucide-react'
 
 const navItems = [
   { to: '/mi-agenda',   icon: Clock,          label: 'Mi Agenda'   },
@@ -8,6 +8,7 @@ const navItems = [
   { to: '/media',       icon: Film,            label: 'Media'       },
   { to: '/personas',    icon: UserCircle,      label: 'Personas'    },
   { to: '/equipos',     icon: Users,           label: 'Equipos'     },
+  { to: '/matriz',      icon: Grid3X3,         label: 'Matriz'      },
 ]
 
 export default function Sidebar() {
