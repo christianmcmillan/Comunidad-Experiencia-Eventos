@@ -50,30 +50,28 @@ export default function PlansPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white">
-        <h1 className="text-lg font-semibold text-gray-900">Eventos</h1>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Buscar planes..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 w-48"
-            />
-          </div>
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="text-sm border border-gray-300 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-          >
-            {years.map((y) => <option key={y} value={y}>{y}</option>)}
-          </select>
-          <Button onClick={() => navigate('/eventos/nuevo')}>
-            <Plus size={14} /> Nuevo Evento
-          </Button>
+      <div className="flex flex-wrap items-center gap-2 px-3 py-3 md:px-6 md:py-4 border-b border-gray-200 bg-white">
+        <h1 className="text-lg font-semibold text-gray-900 mr-auto">Eventos</h1>
+        <div className="relative">
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Buscar planes..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 w-full md:w-44"
+          />
         </div>
+        <select
+          value={selectedYear}
+          onChange={(e) => setSelectedYear(Number(e.target.value))}
+          className="text-sm border border-gray-300 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+        >
+          {years.map((y) => <option key={y} value={y}>{y}</option>)}
+        </select>
+        <Button onClick={() => navigate('/eventos/nuevo')}>
+          <Plus size={14} /> Nuevo Evento
+        </Button>
       </div>
 
       {/* Service type tabs */}
@@ -131,7 +129,7 @@ export default function PlansPage() {
                   </div>
 
                   {/* Service times */}
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="hidden md:flex items-center gap-2 flex-shrink-0">
                     {services.slice(0, 4).map((t) => (
                       <span key={t.id} className="text-xs text-gray-500 flex items-center gap-1">
                         <Clock size={10} />
@@ -146,7 +144,7 @@ export default function PlansPage() {
                   </Badge>
 
                   {/* Order item count */}
-                  <span className="text-xs text-gray-400">{plan.order?.length || 0} elementos</span>
+                  <span className="hidden md:inline text-xs text-gray-400">{plan.order?.length || 0} elementos</span>
                 </div>
               )
             })}

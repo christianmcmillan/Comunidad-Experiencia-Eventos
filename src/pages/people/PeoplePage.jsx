@@ -49,30 +49,46 @@ export default function PeoplePage() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white">
-        <h1 className="text-lg font-semibold text-gray-900">Personas <span className="text-sm text-gray-400 font-normal">({people.length})</span></h1>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Buscar personas..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 w-48"
-            />
-          </div>
-          <Button size="sm" onClick={() => setAddOpen(true)}>
-            <Plus size={14} /> Agregar persona
-          </Button>
+      <div className="flex flex-wrap items-center gap-2 px-3 py-3 md:px-6 md:py-4 border-b border-gray-200 bg-white">
+        <h1 className="text-lg font-semibold text-gray-900 mr-auto">Personas <span className="text-sm text-gray-400 font-normal">({people.length})</span></h1>
+        <div className="relative">
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Buscar personas..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 w-full sm:w-44"
+          />
         </div>
+        <Button size="sm" onClick={() => setAddOpen(true)}>
+          <Plus size={14} /> + Agregar<span className="hidden sm:inline"> persona</span>
+        </Button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-6">
         {filtered.length === 0 ? (
           <EmptyState icon={UserCircle} title="Sin personas" description="Agrega personas al equipo." />
         ) : (
-          <div className="max-w-4xl">
+          <>
+          {/* Mobile list */}
+          <div className="md:hidden bg-white border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100 mb-4">
+            {filtered.map((p) => (
+              <div
+                key={p.id}
+                className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors"
+                onClick={() => navigate(`/personas/${p.id}`)}
+              >
+                <Avatar firstName={p.firstName} lastName={p.lastName} size="sm" />
+                <span className="flex-1 text-sm font-medium text-gray-800 min-w-0 truncate">{p.firstName} {p.lastName}</span>
+                <Badge color={ROLE_COLORS[p.role] || 'gray'} size="xs">
+                  {ROLE_LABELS[p.role] || p.role}
+                </Badge>
+              </div>
+            ))}
+          </div>
+
+          <div className="hidden md:block max-w-4xl">
             <table className="w-full bg-white border border-gray-200 rounded-xl overflow-hidden">
               <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
                 <tr>
@@ -117,6 +133,7 @@ export default function PeoplePage() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 

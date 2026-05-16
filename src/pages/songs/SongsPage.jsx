@@ -68,13 +68,13 @@ export default function SongsPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white gap-3">
-        <h1 className="text-lg font-semibold text-gray-900">
+      <div className="flex flex-wrap items-center gap-2 px-3 py-3 md:px-6 md:py-4 border-b border-gray-200 bg-white">
+        <h1 className="text-lg font-semibold text-gray-900 mr-auto">
           Canciones <span className="text-sm text-gray-400 font-normal">({songs.length})</span>
         </h1>
 
         {/* View toggle */}
-        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5 flex-shrink-0">
           <button
             onClick={() => setView('all')}
             className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md transition-colors ${
@@ -89,25 +89,23 @@ export default function SongsPage() {
               view === 'top' ? 'bg-white text-gray-800 shadow-sm font-medium' : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            <TrendingUp size={12} /> Top canciones
+            <TrendingUp size={12} /> Top
           </button>
         </div>
 
-        <div className="flex items-center gap-2 ml-auto">
-          <div className="relative">
-            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Buscar..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 w-44"
-            />
-          </div>
-          <Button size="sm" onClick={() => setAddOpen(true)}>
-            <Plus size={14} /> Agregar
-          </Button>
+        <div className="relative flex-1 min-w-[120px]">
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Buscar..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 w-full"
+          />
         </div>
+        <Button size="sm" onClick={() => setAddOpen(true)} className="flex-shrink-0">
+          <Plus size={14} /> Agregar
+        </Button>
       </div>
 
       {/* Tag filter bar */}
@@ -141,7 +139,34 @@ export default function SongsPage() {
         {filtered.length === 0 ? (
           <EmptyState icon={Music2} title="Sin canciones" description="Agrega canciones al repertorio." />
         ) : (
-          <div className="max-w-4xl">
+          <>
+          {/* Mobile card list */}
+          <div className="md:hidden bg-white border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100 mb-4">
+            {filtered.map((song, idx) => (
+              <div
+                key={song.id}
+                className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors"
+                onClick={() => navigate(`/canciones/${song.id}`)}
+              >
+                {view === 'top' && (
+                  <span className="text-xs text-gray-400 w-5 text-right flex-shrink-0">{idx + 1}</span>
+                )}
+                <Music2 size={14} className="text-indigo-400 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-800 truncate">{song.title}</p>
+                  {song.artist && <p className="text-xs text-gray-400 truncate">{song.artist}</p>}
+                </div>
+                {song.bpm && (
+                  <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded flex-shrink-0">{song.bpm} BPM</span>
+                )}
+                {view === 'top' && (
+                  <span className="text-xs font-semibold text-indigo-600 flex-shrink-0">{usageMap[song.id] || 0}x</span>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="hidden md:block max-w-4xl">
             <table className="w-full bg-white border border-gray-200 rounded-xl overflow-hidden">
               <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
                 <tr>
@@ -197,6 +222,7 @@ export default function SongsPage() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 
