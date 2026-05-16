@@ -11,15 +11,20 @@ const navItems = [
   { to: '/matriz',      icon: Grid3X3,         label: 'Matriz'      },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ onNav }) {
   const navigate = useNavigate()
 
+  function handleNav(to) {
+    navigate(to)
+    onNav?.()
+  }
+
   return (
-    <aside className="w-56 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
+    <aside className="w-56 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 h-full">
       {/* Logo */}
       <div
         className="px-4 py-4 border-b border-gray-200 cursor-pointer select-none"
-        onClick={() => navigate('/dashboard')}
+        onClick={() => handleNav('/dashboard')}
       >
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
@@ -38,6 +43,7 @@ export default function Sidebar() {
           <NavLink
             key={to}
             to={to}
+            onClick={() => onNav?.()}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
                 isActive
