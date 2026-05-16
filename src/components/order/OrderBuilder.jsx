@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor,
   useSensor, useSensors, DragOverlay
@@ -8,7 +9,7 @@ import {
   verticalListSortingStrategy, arrayMove
 } from '@dnd-kit/sortable'
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
-import { Plus, Music2, MessageSquare, AlignLeft, Film, Clock, ChevronDown } from 'lucide-react'
+import { Plus, Music2, MessageSquare, AlignLeft, Film, Clock, Maximize2 } from 'lucide-react'
 import usePlansStore from '../../store/usePlansStore'
 import OrderItem from './OrderItem'
 import Button from '../ui/Button'
@@ -83,6 +84,7 @@ const ITEM_TYPES = [
 // ── main component ────────────────────────────────────────────────────────────
 
 export default function OrderBuilder({ planId }) {
+  const navigate = useNavigate()
   const { getPlan, setOrder, addOrderItem, deleteOrderItem, duplicateOrderItem } = usePlansStore()
   const plan = getPlan(planId)
 
@@ -188,6 +190,15 @@ export default function OrderBuilder({ planId }) {
         )}
 
         <div className="flex-1" />
+
+        {/* Fullscreen / view button */}
+        <button
+          onClick={() => navigate(`/eventos/${planId}/vista`)}
+          className="p-1.5 rounded text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+          title="Vista completa / imprimir"
+        >
+          <Maximize2 size={15} />
+        </button>
 
         {/* Add button */}
         <div className="relative" ref={addBtnRef}>

@@ -3,6 +3,7 @@ import AppLayout from './components/layout/AppLayout'
 import Dashboard from './pages/Dashboard'
 import PlansPage from './pages/plans/PlansPage'
 import PlanDetailPage from './pages/plans/PlanDetailPage'
+import PlanOrderViewPage from './pages/plans/PlanOrderViewPage'
 import NewPlanPage from './pages/plans/NewPlanPage'
 import TeamsPage from './pages/teams/TeamsPage'
 import TeamDetailPage from './pages/teams/TeamDetailPage'
@@ -15,16 +16,17 @@ import MySchedulePage from './pages/MySchedulePage'
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
+        {/* Full-screen order view — no sidebar */}
+        <Route path="eventos/:id/vista" element={<PlanOrderViewPage />} />
+
         <Route path="/" element={<AppLayout />}>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
-          {/* Eventos (formerly planes) */}
           <Route path="eventos" element={<PlansPage />} />
           <Route path="eventos/nuevo" element={<NewPlanPage />} />
           <Route path="eventos/:id/*" element={<PlanDetailPage />} />
-          {/* Legacy redirect */}
           <Route path="planes" element={<Navigate to="/eventos" replace />} />
           <Route path="planes/:id" element={<Navigate to="/eventos" replace />} />
           <Route path="equipos" element={<TeamsPage />} />
