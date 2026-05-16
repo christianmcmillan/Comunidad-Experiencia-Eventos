@@ -56,21 +56,20 @@ export default function PlanDetailPage() {
 
       {/* ── Collapsed mini-header ── */}
       {collapsed ? (
-        <div className="bg-white border-b border-gray-200 px-4 flex items-center gap-3 h-10 flex-shrink-0">
+        <div className="bg-white border-b border-gray-200 px-3 flex items-center gap-2 h-10 flex-shrink-0">
           <button onClick={() => navigate('/eventos')} className="text-gray-400 hover:text-gray-600">
             <ArrowLeft size={16} />
           </button>
-          {st && <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: st.color }} />}
+          {st && <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: st.color }} />}
           <span className="text-sm font-semibold text-gray-800 truncate flex-1 min-w-0">{plan.title}</span>
-          <span className="text-xs text-gray-400 flex-shrink-0">{formatDates(plan.dates)}</span>
 
-          {/* Tabs inline */}
-          <div className="flex items-center gap-0.5 ml-2">
+          {/* Tabs inline — scrollable */}
+          <div className="flex items-center gap-0.5 overflow-x-auto flex-shrink-0">
             {TABS.map(tab => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`px-3 py-1 text-xs rounded transition-colors ${
+                className={`px-2.5 py-1 text-xs rounded whitespace-nowrap transition-colors ${
                   activeTab === tab.key
                     ? 'bg-indigo-100 text-indigo-700 font-medium'
                     : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
@@ -81,34 +80,29 @@ export default function PlanDetailPage() {
             ))}
           </div>
 
-          <button
-            onClick={() => setCollapsed(false)}
-            className="text-gray-400 hover:text-gray-600 ml-1 flex-shrink-0"
-            title="Expandir encabezado"
-          >
+          <button onClick={() => setCollapsed(false)} className="text-gray-400 hover:text-gray-600 flex-shrink-0">
             <ChevronDown size={15} />
           </button>
         </div>
 
       ) : (
         /* ── Full header ── */
-        <div className="bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex items-start gap-3">
-              <button onClick={() => navigate('/eventos')} className="text-gray-400 hover:text-gray-600 mt-0.5">
-                <ArrowLeft size={18} />
-              </button>
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  {st && <div className="w-3 h-3 rounded-full" style={{ backgroundColor: st.color }} />}
-                  <span className="text-xs text-gray-500">{st?.name}</span>
-                </div>
-                <h1 className="text-lg font-bold text-gray-900">{plan.title}</h1>
-                <p className="text-sm text-gray-500 mt-0.5">{formatDates(plan.dates)}</p>
+        <div className="bg-white border-b border-gray-200 flex-shrink-0">
+          {/* Top row: back + title + publish */}
+          <div className="px-3 md:px-6 pt-3 md:pt-4 pb-2 flex items-start gap-2">
+            <button onClick={() => navigate('/eventos')} className="text-gray-400 hover:text-gray-600 mt-0.5 flex-shrink-0">
+              <ArrowLeft size={18} />
+            </button>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 mb-0.5">
+                {st && <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: st.color }} />}
+                <span className="text-xs text-gray-500 truncate">{st?.name}</span>
               </div>
+              <h1 className="text-base md:text-lg font-bold text-gray-900 leading-tight">{plan.title}</h1>
+              <p className="text-xs md:text-sm text-gray-500 mt-0.5">{formatDates(plan.dates)}</p>
             </div>
-            <div className="flex items-center gap-2">
-              <Badge color={plan.status === 'published' ? 'green' : 'gray'}>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <Badge color={plan.status === 'published' ? 'green' : 'gray'} size="xs">
                 {plan.status === 'published' ? 'Publicado' : 'Borrador'}
               </Badge>
               <Button
@@ -120,40 +114,42 @@ export default function PlanDetailPage() {
             </div>
           </div>
 
-          {/* Service times row */}
-          <div className="flex items-center gap-3 flex-wrap mb-3">
-            {rehearsals.length > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400 uppercase tracking-wide">Ensayos:</span>
-                {rehearsals.map(t => (
-                  <span key={t.id} className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                    <Clock size={10} />
-                    {t.name}{t.datetime ? ` — ${format(new Date(t.datetime), 'HH:mm')}` : ''}
-                  </span>
-                ))}
-              </div>
-            )}
-            {services.length > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400 uppercase tracking-wide">Servicios:</span>
-                {services.map(t => (
-                  <span key={t.id} className="inline-flex items-center gap-1 text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded-full">
-                    <Clock size={10} />
-                    {t.name}{t.datetime ? ` — ${format(new Date(t.datetime), 'HH:mm')}` : ''}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* Service times — horizontally scrollable */}
+          {(rehearsals.length > 0 || services.length > 0) && (
+            <div className="px-3 md:px-6 pb-2 flex items-center gap-3 overflow-x-auto">
+              {rehearsals.length > 0 && (
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <span className="text-xs text-gray-400 uppercase tracking-wide whitespace-nowrap">Ensayos:</span>
+                  {rehearsals.map(t => (
+                    <span key={t.id} className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full whitespace-nowrap">
+                      <Clock size={10} />
+                      {t.name}{t.datetime ? ` — ${format(new Date(t.datetime), 'HH:mm')}` : ''}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {services.length > 0 && (
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <span className="text-xs text-gray-400 uppercase tracking-wide whitespace-nowrap">Servicios:</span>
+                  {services.map(t => (
+                    <span key={t.id} className="inline-flex items-center gap-1 text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded-full whitespace-nowrap">
+                      <Clock size={10} />
+                      {t.name}{t.datetime ? ` — ${format(new Date(t.datetime), 'HH:mm')}` : ''}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
-          {/* Tabs row */}
-          <div className="flex items-center justify-between -mb-4">
-            <div className="flex items-center gap-1">
+          {/* Tabs row — scrollable */}
+          <div className="flex items-center justify-between border-t border-gray-100">
+            <div className="flex items-center overflow-x-auto">
               {TABS.map(tab => (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`px-4 py-2 text-sm border-b-2 transition-colors ${
+                  className={`px-4 py-2.5 text-sm border-b-2 whitespace-nowrap transition-colors ${
                     activeTab === tab.key
                       ? 'border-indigo-600 text-indigo-700 font-medium'
                       : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -164,15 +160,14 @@ export default function PlanDetailPage() {
               ))}
             </div>
 
-            {/* Collapse toggle — only on Orden tab */}
             {activeTab === 'orden' && (
               <button
                 onClick={() => setCollapsed(true)}
-                className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 mb-3 mr-1 transition-colors"
+                className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 px-3 py-2.5 flex-shrink-0 transition-colors"
                 title="Compactar encabezado"
               >
                 <ChevronUp size={14} />
-                <span>Compactar</span>
+                <span className="hidden sm:inline">Compactar</span>
               </button>
             )}
           </div>

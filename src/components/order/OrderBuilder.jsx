@@ -159,61 +159,56 @@ export default function OrderBuilder({ planId }) {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* ── sticky toolbar ── */}
-      <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-6 py-2 flex items-center gap-4">
+      <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-3 md:px-6 py-2 flex flex-wrap items-center gap-2 md:gap-4">
         {/* Duration */}
-        <div className="flex items-center gap-1.5 text-sm text-gray-500 min-w-0">
-          <Clock size={14} className="flex-shrink-0" />
-          <span>
-            Duración: <strong className="text-gray-800">{fmtDuration(total)}</strong>
-          </span>
-          <span className="text-gray-200 mx-1">|</span>
-          <span className="text-gray-400">{order.length} elemento{order.length !== 1 ? 's' : ''}</span>
+        <div className="flex items-center gap-1.5 text-xs md:text-sm text-gray-500 min-w-0">
+          <Clock size={13} className="flex-shrink-0" />
+          <strong className="text-gray-800">{fmtDuration(total)}</strong>
+          <span className="text-gray-300">·</span>
+          <span className="text-gray-400">{order.length} elem.</span>
         </div>
 
-        {/* Service time clock selector */}
+        {/* Service time clock selector — scrollable */}
         {allTimes.length > 0 && (
-          <div className="flex items-center gap-1.5 ml-2">
-            <span className="text-xs text-gray-400">Reloj desde:</span>
-            <div className="flex gap-1">
-              {allTimes.map(t => (
-                <button
-                  key={t.id}
-                  onClick={() => setSelectedTime(t.id === selectedTime ? null : t.id)}
-                  className={`text-xs px-2 py-1 rounded-full border transition-colors ${
-                    (selectedTime === t.id || (!selectedTime && t.id === allTimes[0]?.id))
-                      ? 'bg-indigo-100 border-indigo-300 text-indigo-700 font-medium'
-                      : 'border-gray-200 text-gray-500 hover:border-gray-300'
-                  }`}
-                >
-                  {t.name}
-                </button>
-              ))}
-            </div>
+          <div className="flex items-center gap-1 overflow-x-auto flex-shrink-0 max-w-[180px] md:max-w-none">
+            {allTimes.map(t => (
+              <button
+                key={t.id}
+                onClick={() => setSelectedTime(t.id === selectedTime ? null : t.id)}
+                className={`text-xs px-2 py-0.5 rounded-full border whitespace-nowrap transition-colors flex-shrink-0 ${
+                  (selectedTime === t.id || (!selectedTime && t.id === allTimes[0]?.id))
+                    ? 'bg-indigo-100 border-indigo-300 text-indigo-700 font-medium'
+                    : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                }`}
+              >
+                {t.name}
+              </button>
+            ))}
           </div>
         )}
 
         <div className="flex-1" />
 
-        {/* Save as template */}
-        <button
-          onClick={() => { setTemplateName(''); setSaveTemplateOpen(true) }}
-          className="p-1.5 rounded text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-          title="Guardar como plantilla"
-        >
-          <BookCopy size={15} />
-        </button>
-
-        {/* Fullscreen / view button */}
-        <button
-          onClick={() => navigate(`/eventos/${planId}/vista`)}
-          className="p-1.5 rounded text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-          title="Vista completa / imprimir"
-        >
-          <Maximize2 size={15} />
-        </button>
+        {/* Icon buttons */}
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <button
+            onClick={() => { setTemplateName(''); setSaveTemplateOpen(true) }}
+            className="p-1.5 rounded text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+            title="Guardar como plantilla"
+          >
+            <BookCopy size={15} />
+          </button>
+          <button
+            onClick={() => navigate(`/eventos/${planId}/vista`)}
+            className="p-1.5 rounded text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+            title="Vista completa / imprimir"
+          >
+            <Maximize2 size={15} />
+          </button>
+        </div>
 
         {/* Add button */}
-        <div className="relative" ref={addBtnRef}>
+        <div className="relative flex-shrink-0" ref={addBtnRef}>
           <Button size="sm" onClick={() => setAddMenuOpen(v => !v)}>
             <Plus size={14} /> Agregar
           </Button>
