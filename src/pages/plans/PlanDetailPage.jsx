@@ -94,12 +94,11 @@ export default function PlanDetailPage() {
               <ArrowLeft size={18} />
             </button>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5 mb-0.5">
-                {st && <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: st.color }} />}
-                <span className="text-xs text-gray-500 truncate">{st?.name}</span>
+              <div className="flex items-center gap-1.5 mb-1">
+                {st && <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: st.color }} />}
+                <span className="text-xs text-gray-400">{formatDates(plan.dates)}</span>
               </div>
               <h1 className="text-base md:text-lg font-bold text-gray-900 leading-tight">{plan.title}</h1>
-              <p className="text-xs md:text-sm text-gray-500 mt-0.5">{formatDates(plan.dates)}</p>
             </div>
             <div className="flex items-center gap-1.5 flex-shrink-0">
               <Badge color={plan.status === 'published' ? 'green' : 'gray'} size="xs">
@@ -114,33 +113,6 @@ export default function PlanDetailPage() {
             </div>
           </div>
 
-          {/* Service times — horizontally scrollable */}
-          {(rehearsals.length > 0 || services.length > 0) && (
-            <div className="px-3 md:px-6 pb-2 flex items-center gap-3 overflow-x-auto">
-              {rehearsals.length > 0 && (
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <span className="text-xs text-gray-400 uppercase tracking-wide whitespace-nowrap">Ensayos:</span>
-                  {rehearsals.map(t => (
-                    <span key={t.id} className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full whitespace-nowrap">
-                      <Clock size={10} />
-                      {t.name}{t.datetime ? ` — ${format(new Date(t.datetime), 'HH:mm')}` : ''}
-                    </span>
-                  ))}
-                </div>
-              )}
-              {services.length > 0 && (
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <span className="text-xs text-gray-400 uppercase tracking-wide whitespace-nowrap">Servicios:</span>
-                  {services.map(t => (
-                    <span key={t.id} className="inline-flex items-center gap-1 text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded-full whitespace-nowrap">
-                      <Clock size={10} />
-                      {t.name}{t.datetime ? ` — ${format(new Date(t.datetime), 'HH:mm')}` : ''}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Tabs row — scrollable */}
           <div className="flex items-center justify-between border-t border-gray-100">

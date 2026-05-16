@@ -68,14 +68,13 @@ export default function PlanTeamsTab({ planId }) {
   )
 
   return (
-    <div className="flex h-full overflow-hidden">
-      {/* Time selector */}
-      <div className="w-44 border-r border-gray-200 bg-gray-50 p-3 overflow-y-auto flex-shrink-0">
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Horarios</p>
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* ── Top time selector bar ── */}
+      <div className="flex items-center gap-1.5 border-b border-gray-200 bg-white px-4 py-2 flex-shrink-0 overflow-x-auto">
         <button
           onClick={() => setSelectedTimeId('all')}
-          className={`w-full text-left px-2 py-1.5 rounded text-xs mb-1 transition-colors ${
-            selectedTimeId === 'all' ? 'bg-indigo-100 text-indigo-700 font-medium' : 'text-gray-600 hover:bg-gray-200'
+          className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
+            selectedTimeId === 'all' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
           Todos
@@ -84,21 +83,18 @@ export default function PlanTeamsTab({ planId }) {
           <button
             key={t.id}
             onClick={() => setSelectedTimeId(t.id)}
-            className={`w-full text-left px-2 py-1.5 rounded text-xs mb-0.5 transition-colors ${
-              selectedTimeId === t.id ? 'bg-indigo-100 text-indigo-700 font-medium' : 'text-gray-600 hover:bg-gray-200'
+            className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
+              selectedTimeId === t.id ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            {t.isRehearsal && <span className="text-gray-400">[E] </span>}
+            {t.isRehearsal && <span className="opacity-60">[E] </span>}
             {t.name}
           </button>
         ))}
-
-        {/* Legend */}
-        <div className="mt-6 space-y-1.5">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Estado</p>
+        <div className="ml-auto flex items-center gap-3 flex-shrink-0 pl-4 border-l border-gray-100">
           {Object.entries(STATUS_CFG).filter(([k]) => k !== 'needed').map(([key, cfg]) => (
-            <div key={key} className="flex items-center gap-1.5 text-xs text-gray-500">
-              <div className={`w-2 h-2 rounded-full ${cfg.dot}`} />
+            <div key={key} className="flex items-center gap-1 text-xs text-gray-500 whitespace-nowrap">
+              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${cfg.dot}`} />
               {cfg.label}
             </div>
           ))}

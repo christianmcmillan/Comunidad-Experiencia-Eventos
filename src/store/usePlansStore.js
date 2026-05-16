@@ -205,7 +205,14 @@ const usePlansStore = create(
         }
       }),
     }),
-    { name: 'comunidad-plans' }
+    {
+      name: 'comunidad-plans',
+      version: 3,
+      migrate(persisted) {
+        // Reset plans to seed data on every version bump
+        return { plans: seedPlans, templates: persisted?.templates || [] }
+      },
+    }
   )
 )
 

@@ -2,11 +2,11 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { ArrowLeft, Printer, Clock, Music2, MessageSquare, AlignLeft, Film } from 'lucide-react'
+import { ArrowLeft, Printer, Clock, Music2, MessageSquare, AlignLeft, Film, ChevronsLeft } from 'lucide-react'
 import usePlansStore from '../../store/usePlansStore'
 import useServiceTypesStore from '../../store/useServiceTypesStore'
 import useSongsStore from '../../store/useSongsStore'
-import { fmtDuration, fmtClockTime } from '../../components/order/OrderBuilder'
+import { fmtDuration, fmtClockTime, buildStartTimes, buildSectionTotals } from '../../components/order/OrderBuilder'
 
 function formatDates(dates) {
   if (!dates || dates.length === 0) return ''
@@ -16,39 +16,14 @@ function formatDates(dates) {
   return `${format(a, 'd')} & ${format(b, "d 'de' MMMM yyyy", { locale: es })}`
 }
 
-function buildStartTimes(order) {
-  const map = {}
-  let running = 0
-  for (const item of order) {
-    if (item.type !== 'header') {
-      map[item.id] = running
-      running += item.duration || 0
-    }
-  }
-  return map
-}
+const isSec = (type) => type === 'header' || type === 'section'
 
-function buildSectionTotals(order) {
-  const map = {}
-  let currentHeaderId = null
-  let running = 0
-  for (const item of order) {
-    if (item.type === 'header') {
-      if (currentHeaderId) map[currentHeaderId] = running
-      currentHeaderId = item.id
-      running = 0
-    } else {
-      running += item.duration || 0
-    }
-  }
-  if (currentHeaderId) map[currentHeaderId] = running
-  return map
-}
-
-const TYPE_ICON = {
-  song:   { Icon: Music2,        color: 'text-indigo-400'  },
-  spoken: { Icon: MessageSquare, color: 'text-emerald-500' },
-  media:  { Icon: Film,          color: 'text-orange-400'  },
+const TYPE_CFG = {
+  song:    { Icon: Music2,        color: 'text-indigo-400'  },
+  spoken:  { Icon: MessageSquare, color: 'text-emerald-500' },
+  media:   { Icon: Film,          color: 'text-orange-400'  },
+  header:  { Icon: AlignLeft,     color: 'text-gray-400'    },
+  section: { Icon: AlignLeft,     color: 'text-gray-400'    },
 }
 
 export default function PlanOrderViewPage() {
@@ -59,7 +34,7 @@ export default function PlanOrderViewPage() {
   const { getSong } = useSongsStore()
   const plan = getPlan(id)
 
-  const allTimes    = (plan?.times || []).filter(t => !t.isRehearsal)
+  const allTimes = (plan?.times || []).filter(t => !t.isRehearsal)
   const [selTime, setSelTime] = useState(null)
 
   if (!plan) {
@@ -73,52 +48,50 @@ export default function PlanOrderViewPage() {
     )
   }
 
-  const st         = getServiceType(plan.serviceTypeId)
-  const order      = [...(plan.order || [])].sort((a, b) => a.position - b.position)
-  const startTimes = buildStartTimes(order)
-  const sectTotals = buildSectionTotals(order)
-  const total      = order.filter(i => i.type !== 'header').reduce((s, i) => s + (i.duration || 0), 0)
+  const st          = getServiceType(plan.serviceTypeId)
+  const order       = [...(plan.order || [])].sort((a, b) => a.position - b.position)
+  const startTimes  = buildStartTimes(order)
+  const sectTotals  = buildSectionTotals(order)
+  const total       = order.filter(i => !isSec(i.type)).reduce((s, i) => s + (i.duration || 0), 0)
 
-  const currentTime  = allTimes.find(t => t.id === selTime) || allTimes[0] || null
-  let baseMinutes    = null
+  const currentTime = allTimes.find(t => t.id === selTime) || allTimes[0] || null
+  let baseMinutes   = null
   if (currentTime?.datetime) {
     const d = new Date(currentTime.datetime)
     baseMinutes = d.getHours() * 60 + d.getMinutes()
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white print:bg-white">
+
       {/* ── Top bar (hidden on print) ── */}
-      <div className="print:hidden sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-4">
+      <div className="print:hidden sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-2 flex items-center gap-3">
         <button
           onClick={() => navigate(`/eventos/${id}`)}
-          className="text-gray-400 hover:text-gray-700 flex items-center gap-1.5 text-sm"
+          className="text-gray-400 hover:text-gray-700 flex items-center gap-1 text-sm"
         >
-          <ArrowLeft size={16} />
-          <span>Volver</span>
+          <ArrowLeft size={15} />
+          Volver
         </button>
 
         <div className="flex-1" />
 
         {/* Service time selector */}
         {allTimes.length > 0 && (
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs text-gray-400">Reloj:</span>
-            <div className="flex gap-1">
-              {allTimes.map(t => (
-                <button
-                  key={t.id}
-                  onClick={() => setSelTime(t.id === selTime ? null : t.id)}
-                  className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                    (selTime === t.id || (!selTime && t.id === allTimes[0]?.id))
-                      ? 'bg-indigo-100 border-indigo-300 text-indigo-700 font-medium'
-                      : 'border-gray-200 text-gray-500 hover:border-gray-300'
-                  }`}
-                >
-                  {t.name}
-                </button>
-              ))}
-            </div>
+          <div className="flex items-center gap-1">
+            {allTimes.map(t => (
+              <button
+                key={t.id}
+                onClick={() => setSelTime(t.id === selTime ? null : t.id)}
+                className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                  (selTime === t.id || (!selTime && t.id === allTimes[0]?.id))
+                    ? 'bg-indigo-100 border-indigo-300 text-indigo-700 font-medium'
+                    : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                }`}
+              >
+                {t.name}
+              </button>
+            ))}
           </div>
         )}
 
@@ -132,135 +105,137 @@ export default function PlanOrderViewPage() {
       </div>
 
       {/* ── Content ── */}
-      <div className="max-w-3xl mx-auto px-8 py-8 print:py-4 print:px-6">
+      <div className="max-w-2xl mx-auto py-8 print:py-4 print:max-w-none">
 
         {/* Plan header */}
-        <div className="mb-8 print:mb-5">
+        <div className="px-6 mb-6 print:mb-4">
           <div className="flex items-center gap-2 mb-1">
-            {st && <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: st.color }} />}
-            <span className="text-xs text-gray-400 uppercase tracking-wide">{st?.name}</span>
+            {st && <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: st.color }} />}
+            <span className="text-xs text-gray-400">{formatDates(plan.dates)}</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 print:text-xl">{plan.title}</h1>
-          <p className="text-gray-500 mt-0.5">{formatDates(plan.dates)}</p>
-
-          <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
+          <h1 className="text-xl font-bold text-gray-900 print:text-lg">{plan.title}</h1>
+          <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-400">
             {currentTime && (
               <span className="flex items-center gap-1">
-                <Clock size={13} />
+                <Clock size={11} />
                 {currentTime.name}
-                {currentTime.datetime && ` — ${format(new Date(currentTime.datetime), 'HH:mm')}`}
               </span>
             )}
-            <span className="text-gray-300">|</span>
+            <span>·</span>
             <span>{fmtDuration(total)} total</span>
-            <span className="text-gray-300">|</span>
-            <span>{order.filter(i => i.type !== 'header').length} elementos</span>
+            <span>·</span>
+            <span>{order.filter(i => !isSec(i.type)).length} elementos</span>
           </div>
         </div>
 
-        {/* ── Order list ── */}
-        <div className="space-y-0">
-          {order.map((item) => {
-            if (item.type === 'header') {
-              const sTotal = sectTotals[item.id]
-              return (
-                <div key={item.id} className="mt-8 mb-3 print:mt-5 print:mb-2">
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 h-px bg-gray-200" />
-                    <span className="text-xs font-bold uppercase tracking-widest text-gray-400 px-2">
-                      {item.title}
-                    </span>
-                    <div className="flex-1 h-px bg-gray-200" />
-                    {sTotal > 0 && (
-                      <span className="text-xs text-gray-300 tabular-nums w-10 text-right">{fmtDuration(sTotal)}</span>
-                    )}
-                  </div>
-                </div>
-              )
-            }
+        {/* ── Column headers ── */}
+        <div className="flex items-center border-y border-gray-200 bg-gray-50 px-0 py-1.5">
+          <div className="w-[52px] flex-shrink-0 text-right pr-3">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Hora</span>
+          </div>
+          <div className="w-[52px] flex-shrink-0 text-right pr-4">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Dur.</span>
+          </div>
+          <div className="flex-1 px-1">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Título</span>
+          </div>
+        </div>
 
-            const { Icon, color } = TYPE_ICON[item.type] || TYPE_ICON.spoken
-            const song       = item.songId ? getSong(item.songId) : null
-            const offsetSecs = startTimes[item.id] || 0
-            const clock      = fmtClockTime(baseMinutes, offsetSecs)
-
+        {/* ── Order rows ── */}
+        {order.map((item) => {
+          if (isSec(item.type)) {
+            const sTotal = sectTotals[item.id]
             return (
               <div
                 key={item.id}
-                className="flex items-start gap-4 py-2.5 border-b border-gray-50 last:border-0 group print:py-2"
+                className="flex items-center bg-gray-50 border-b border-t border-gray-200 py-1.5"
               >
-                {/* Clock time */}
-                <div className="w-16 flex-shrink-0 text-right">
-                  {clock ? (
-                    <span className="text-xs font-medium text-indigo-500 tabular-nums">{clock}</span>
-                  ) : (
-                    <span className="text-xs text-gray-300 tabular-nums">
-                      {offsetSecs > 0 ? `+${fmtDuration(offsetSecs)}` : '0:00'}
+                <div className="w-[52px] flex-shrink-0" />
+                <div className="w-[52px] flex-shrink-0" />
+                <div className="flex-1 flex items-center gap-2 min-w-0 px-1">
+                  <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                    {item.title || 'SECCIÓN'}
+                  </span>
+                  {item.beforeService && (
+                    <span className="flex items-center gap-0.5 text-xs font-medium text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded flex-shrink-0">
+                      <ChevronsLeft size={11} />
+                      ANTES
                     </span>
                   )}
                 </div>
-
-                {/* Type icon */}
-                <div className="pt-0.5 flex-shrink-0">
-                  <Icon size={14} className={color} />
-                </div>
-
-                {/* Main content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-sm font-semibold text-gray-900">{item.title}</span>
-                    {item.type === 'song' && song && (
-                      <span className="text-xs text-gray-400">{song.artist}</span>
-                    )}
-                  </div>
-
-                  {/* Song key + BPM */}
-                  {item.type === 'song' && (item.key || song?.bpm) && (
-                    <div className="flex items-center gap-2 mt-0.5">
-                      {item.key && (
-                        <span className="text-xs bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded font-medium">{item.key}</span>
-                      )}
-                      {song?.bpm && (
-                        <span className="text-xs text-gray-400">{song.bpm} BPM</span>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Description / notes */}
-                  {item.description && (
-                    <p className="text-xs text-gray-400 mt-0.5">{item.description}</p>
-                  )}
-                  {item.notes && (
-                    <p className="text-xs text-amber-600 italic mt-0.5">"{item.notes}"</p>
-                  )}
-                </div>
-
-                {/* Duration */}
-                <div className="flex-shrink-0 text-right">
-                  <span className="text-sm tabular-nums text-gray-500">{fmtDuration(item.duration)}</span>
-                </div>
+                {sTotal > 0 && (
+                  <span className="text-xs text-gray-400 tabular-nums pr-4">{fmtDuration(sTotal)}</span>
+                )}
               </div>
             )
-          })}
-        </div>
+          }
 
-        {/* Total */}
-        <div className="mt-6 pt-4 border-t-2 border-gray-200 flex justify-between items-center">
-          <span className="text-sm text-gray-400">Duración total</span>
-          <span className="text-lg font-bold text-gray-900 tabular-nums">{fmtDuration(total)}</span>
+          const cfg        = TYPE_CFG[item.type] || TYPE_CFG.spoken
+          const Icon       = cfg.icon || cfg.Icon
+          const song       = item.songId ? getSong(item.songId) : null
+          const offsetSecs = startTimes[item.id] ?? 0
+          const clock      = fmtClockTime(baseMinutes, offsetSecs)
+
+          return (
+            <div key={item.id} className="flex items-start border-b border-gray-100 print:break-inside-avoid">
+              {/* Time */}
+              <div className="w-[52px] flex-shrink-0 pt-2.5 text-right pr-3">
+                {clock && (
+                  <span className="text-xs text-gray-400 tabular-nums">{clock}</span>
+                )}
+              </div>
+
+              {/* Duration */}
+              <div className="w-[52px] flex-shrink-0 pt-2.5 text-right pr-4">
+                <span className="text-xs text-gray-500 tabular-nums">
+                  {item.duration > 0 ? fmtDuration(item.duration) : '—'}
+                </span>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 py-2 min-w-0 px-1">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <cfg.Icon size={12} className={cfg.color} />
+                  <span className="text-sm font-medium text-gray-800">{item.title}</span>
+                  {item.type === 'song' && item.key && (
+                    <span className="text-xs bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded font-semibold">{item.key}</span>
+                  )}
+                </div>
+                {item.type === 'song' && song?.artist && (
+                  <p className="text-xs text-gray-400 mt-0.5 ml-[18px]">{song.artist}</p>
+                )}
+                {item.description && (
+                  <p className="text-xs text-gray-400 mt-0.5 ml-[18px]">{item.description}</p>
+                )}
+                {item.notes && (
+                  <p className="text-xs text-gray-500 mt-0.5 ml-[18px] whitespace-pre-line leading-relaxed">{item.notes}</p>
+                )}
+              </div>
+            </div>
+          )
+        })}
+
+        {/* Total row */}
+        <div className="flex items-center border-t-2 border-gray-300 mt-1 pt-2 pb-8 print:pb-4">
+          <div className="w-[52px] flex-shrink-0" />
+          <div className="w-[52px] flex-shrink-0 text-right pr-4">
+            <span className="text-sm font-bold text-gray-700 tabular-nums">{fmtDuration(total)}</span>
+          </div>
+          <div className="flex-1 px-1">
+            <span className="text-xs text-gray-400">duración total</span>
+          </div>
         </div>
 
         {/* Print footer */}
-        <div className="hidden print:block mt-8 text-xs text-gray-400 text-center">
+        <div className="hidden print:block text-xs text-gray-400 text-center border-t border-gray-200 pt-3">
           Comunidad Experiencia — {plan.title} — {formatDates(plan.dates)}
         </div>
       </div>
 
-      {/* Print styles */}
       <style>{`
         @media print {
-          @page { margin: 1.5cm; size: A4; }
-          body { font-size: 11pt; }
+          @page { margin: 1.2cm; size: A4; }
+          body { font-size: 10pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
       `}</style>
     </div>

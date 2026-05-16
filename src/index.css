@@ -11,6 +11,48 @@ body {
   color: #1a1a2e;
 }
 
+/* ── Dark mode ─────────────────────────────────────────────────────────────── */
+html.dark {
+  color-scheme: dark;
+
+  /* Remap Tailwind's color variables to a dark slate palette.
+     white  → card surface   gray-50 → page background
+     gray scale flips so higher numbers = lighter text */
+  --color-white:     #1e293b;   /* card / panel bg */
+
+  --color-gray-50:   #0f172a;   /* page bg */
+  --color-gray-100:  #1e2d42;   /* sidebar / hover bg */
+  --color-gray-200:  #2a3d56;   /* borders */
+  --color-gray-300:  #3b5068;   /* subtle borders / dim icons */
+  --color-gray-400:  #567090;   /* placeholder / muted icons */
+  --color-gray-500:  #7090b0;   /* secondary text */
+  --color-gray-600:  #93b0cc;   /* body text */
+  --color-gray-700:  #b8cfe0;   /* strong text */
+  --color-gray-800:  #d5e4f0;   /* headings */
+  --color-gray-900:  #edf4fb;   /* primary text */
+  --color-gray-950:  #f5f9fd;
+
+  /* Indigo — keep vivid, only soften the light tints */
+  --color-indigo-50:  #1a2050;
+  --color-indigo-100: #222970;
+
+  /* Emerald tints (spoken items) */
+  --color-emerald-50: #0d2318;
+
+  /* Orange tints (media items) */
+  --color-orange-50:  #2a1708;
+
+  /* Amber tints */
+  --color-amber-50:   #271e07;
+
+  /* Red tints */
+  --color-red-50:     #2a0f0f;
+
+  /* Green tints */
+  --color-green-50:   #0e2210;
+  --color-green-100:  #14321a;
+}
+
 #root {
   width: 100%;
   min-height: 100vh;
@@ -21,6 +63,10 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+html.dark ::-webkit-scrollbar-thumb { background: #2a3d56; }
+html.dark ::-webkit-scrollbar-thumb:hover { background: #3b5068; }
+html.dark body { background: #0f172a; color: #edf4fb; }
 
 /* Drag handle */
 .drag-handle { cursor: grab; }

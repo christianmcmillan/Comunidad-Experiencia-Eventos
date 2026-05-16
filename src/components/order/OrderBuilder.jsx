@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor,
-  useSensor, useSensors, DragOverlay
+  useSensor, useSensors, DragOverlay, useDraggable
 } from '@dnd-kit/core'
 import {
   SortableContext, sortableKeyboardCoordinates,
@@ -19,49 +19,73 @@ import Modal from '../ui/Modal'
 
 export function fmtDuration(secs) {
   if (!secs || secs <= 0) return '—'
-  const m = Math.floor(secs / 60)
+  const h = Math.floor(secs / 3600)
+  const m = Math.floor((secs % 3600) / 60)
   const s = secs % 60
-  if (m >= 60) {
-    const h = Math.floor(m / 60); const r = m % 60
-    return r > 0 ? `${h}h ${r}m` : `${h}h`
-  }
-  return s > 0 ? `${m}:${s.toString().padStart(2, '0')}` : `${m} min`
+  if (h > 0) return `${h}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`
+  return `${m}:${s.toString().padStart(2,'0')}`
 }
 
 export function fmtClockTime(baseMinutes, offsetSecs) {
-  // baseMinutes = service start in minutes from midnight (e.g. 17*60 = 1020 for 5pm)
   if (baseMinutes == null) return null
   const totalMins = baseMinutes + Math.floor(offsetSecs / 60)
-  const h = Math.floor(totalMins / 60) % 24
-  const m = totalMins % 60
-  const ampm = h >= 12 ? 'pm' : 'am'
-  const h12 = h > 12 ? h - 12 : h === 0 ? 12 : h
-  return `${h12}:${m.toString().padStart(2, '0')} ${ampm}`
+  const h24 = Math.floor(totalMins / 60) % 24
+  const m   = totalMins % 60
+  const h12 = h24 > 12 ? h24 - 12 : h24 === 0 ? 12 : h24
+  return `${h12}:${m.toString().padStart(2, '0')}`
 }
 
-function buildStartTimes(order) {
-  const map = {}
-  let running = 0
+const isSec = (type) => type === 'header' || type === 'section'
+
+export function buildStartTimes(order) {
+  // First pass: find before-service sections and their total durations
+  const sectionInfo = {}
+  let curSecId = null
   for (const item of order) {
-    if (item.type !== 'header') {
-      map[item.id] = running
-      running += item.duration || 0
+    if (isSec(item.type)) {
+      curSecId = item.id
+      sectionInfo[item.id] = { beforeService: !!item.beforeService, totalDuration: 0 }
+    } else if (curSecId) {
+      sectionInfo[curSecId].totalDuration += item.duration || 0
+    }
+  }
+
+  // Second pass: assign offsets
+  // Before-service items get negative offsets counting up to 0 (service start)
+  // Regular items get positive offsets from 0
+  const map = {}
+  curSecId = null
+  let beforeOffset = 0
+  let afterOffset  = 0
+  for (const item of order) {
+    if (isSec(item.type)) {
+      curSecId = item.id
+      if (sectionInfo[item.id]?.beforeService) {
+        beforeOffset = -(sectionInfo[item.id].totalDuration)
+      }
+    } else {
+      if (curSecId && sectionInfo[curSecId]?.beforeService) {
+        map[item.id] = beforeOffset
+        beforeOffset += item.duration || 0
+      } else {
+        map[item.id] = afterOffset
+        afterOffset  += item.duration || 0
+      }
     }
   }
   return map
 }
 
 function totalSeconds(order) {
-  return order.filter(i => i.type !== 'header').reduce((s, i) => s + (i.duration || 0), 0)
+  return order.filter(i => !isSec(i.type)).reduce((s, i) => s + (i.duration || 0), 0)
 }
 
-// Build section subtotals: for each header, sum durations of items until the next header
-function buildSectionTotals(order) {
+export function buildSectionTotals(order) {
   const map = {}
   let currentHeaderId = null
   let running = 0
   for (const item of order) {
-    if (item.type === 'header') {
+    if (isSec(item.type)) {
       if (currentHeaderId) map[currentHeaderId] = running
       currentHeaderId = item.id
       running = 0
@@ -92,6 +116,7 @@ export default function OrderBuilder({ planId }) {
   const [addMenuOpen,       setAddMenuOpen]       = useState(false)
   const [insertAfter,       setInsertAfter]       = useState(null)
   const [activeId,          setActiveId]          = useState(null)
+  const [draggingNewType,   setDraggingNewType]   = useState(null)
   const [selectedTime,      setSelectedTime]      = useState(null)
   const [saveTemplateOpen,  setSaveTemplateOpen]  = useState(false)
   const [templateName,      setTemplateName]      = useState('')
@@ -118,9 +143,25 @@ export default function OrderBuilder({ planId }) {
     baseMinutes = d.getHours() * 60 + d.getMinutes()
   }
 
+  const anyDragging = activeId !== null || draggingNewType !== null
+
   // ── drag ──
-  function handleDragStart({ active }) { setActiveId(active.id) }
+  function handleDragStart({ active }) {
+    if (active.data.current?.isNew) {
+      setDraggingNewType(active.data.current.itemType)
+    } else {
+      setActiveId(active.id)
+    }
+  }
+
   function handleDragEnd({ active, over }) {
+    if (active.data.current?.isNew) {
+      setDraggingNewType(null)
+      setAddMenuOpen(false)
+      setInsertAfter(null)
+      if (over) handleAddItem(active.data.current.itemType, over.id)
+      return
+    }
     setActiveId(null)
     if (!over || active.id === over.id) return
     const oldIdx = order.findIndex(i => i.id === active.id)
@@ -133,12 +174,11 @@ export default function OrderBuilder({ planId }) {
   function handleAddItem(type, afterId) {
     const DEFAULTS = {
       header:  { title: 'NUEVA SECCIÓN', duration: 0    },
-      song:    { title: '',              duration: 240   },  // blank title → triggers song picker immediately
-      spoken:  { title: '',              duration: 300   },  // blank → triggers inline editing
+      song:    { title: '',              duration: 240   },
+      spoken:  { title: '',              duration: 300   },
       media:   { title: '',              duration: 180   },
     }
     if (afterId != null) {
-      // Insert at position right after afterId
       const afterIdx = afterId === 'start' ? -1 : order.findIndex(i => i.id === afterId)
       const newItem = { type, ...DEFAULTS[type], id: Math.random().toString(36).slice(2, 10), position: afterIdx + 1 }
       const newOrder = [
@@ -157,6 +197,13 @@ export default function OrderBuilder({ planId }) {
   const activeItem = activeId ? order.find(i => i.id === activeId) : null
 
   return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      modifiers={draggingNewType ? [] : [restrictToVerticalAxis]}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
     <div className="flex flex-col h-full overflow-hidden">
       {/* ── sticky toolbar ── */}
       <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-3 md:px-6 py-2 flex flex-wrap items-center gap-2 md:gap-4">
@@ -221,8 +268,24 @@ export default function OrderBuilder({ planId }) {
         </div>
       </div>
 
+      {/* ── column headers ── */}
+      {order.length > 0 && (
+        <div className="flex items-center border-b border-gray-200 bg-white px-0 py-1.5 flex-shrink-0">
+          <div className="w-7 flex-shrink-0" />
+          <div className="w-[52px] flex-shrink-0 text-right pr-3">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Hora</span>
+          </div>
+          <div className="w-[52px] flex-shrink-0 text-right pr-4">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Dur.</span>
+          </div>
+          <div className="flex-1">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Título</span>
+          </div>
+        </div>
+      )}
+
       {/* ── list ── */}
-      <div className="flex-1 overflow-y-auto px-6 py-3">
+      <div className="flex-1 overflow-y-auto">
         {order.length === 0 ? (
           <EmptyOrder onAdd={type => handleAddItem(type, null)} />
         ) : (
@@ -235,52 +298,49 @@ export default function OrderBuilder({ planId }) {
               setInsertAfter={setInsertAfter}
             />
 
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              modifiers={[restrictToVerticalAxis]}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext items={order.map(i => i.id)} strategy={verticalListSortingStrategy}>
-                {order.map((item) => (
-                  <div key={item.id}>
-                    <OrderItem
-                      item={item}
-                      planId={planId}
-                      startSeconds={startTimes[item.id]}
-                      baseMinutes={baseMinutes}
-                      sectionTotal={sectionTots[item.id]}
-                      onDelete={() => deleteOrderItem(planId, item.id)}
-                      onDuplicate={() => duplicateOrderItem(planId, item.id)}
-                    />
-                    <InsertRow
-                      id={item.id}
-                      insertAfter={insertAfter}
-                      setInsertAfter={setInsertAfter}
-                      onAdd={type => handleAddItem(type, item.id)}
-                    />
-                  </div>
-                ))}
-              </SortableContext>
-              <DragOverlay>
-                {activeItem && (
+            <SortableContext items={order.map(i => i.id)} strategy={verticalListSortingStrategy}>
+              {order.map((item) => (
+                <div key={item.id}>
                   <OrderItem
-                    item={activeItem}
+                    item={item}
                     planId={planId}
-                    startSeconds={startTimes[activeItem.id]}
+                    startSeconds={startTimes[item.id]}
                     baseMinutes={baseMinutes}
-                    isDragging
+                    sectionTotal={sectionTots[item.id]}
+                    onDelete={() => deleteOrderItem(planId, item.id)}
+                    onDuplicate={() => duplicateOrderItem(planId, item.id)}
                   />
-                )}
-              </DragOverlay>
-            </DndContext>
+                  <InsertRow
+                    id={item.id}
+                    insertAfter={insertAfter}
+                    setInsertAfter={setInsertAfter}
+                    onAdd={type => handleAddItem(type, item.id)}
+                  />
+                </div>
+              ))}
+            </SortableContext>
           </>
         )}
       </div>
 
-      {/* click-outside closes add menu */}
-      {addMenuOpen && <div className="fixed inset-0 z-10" onClick={() => setAddMenuOpen(false)} />}
+      {/* click-outside closes add menu — suppressed during drag so menu stays open */}
+      {addMenuOpen && !anyDragging && (
+        <div className="fixed inset-0 z-10" onClick={() => setAddMenuOpen(false)} />
+      )}
+
+      <DragOverlay>
+        {draggingNewType ? (
+          <NewItemDragPreview type={draggingNewType} />
+        ) : activeItem ? (
+          <OrderItem
+            item={activeItem}
+            planId={planId}
+            startSeconds={startTimes[activeItem.id]}
+            baseMinutes={baseMinutes}
+            isDragging
+          />
+        ) : null}
+      </DragOverlay>
 
       {/* Save as template modal */}
       <Modal open={saveTemplateOpen} onClose={() => setSaveTemplateOpen(false)} title="Guardar como plantilla">
@@ -323,27 +383,52 @@ export default function OrderBuilder({ planId }) {
         </div>
       </Modal>
     </div>
+    </DndContext>
   )
 }
 
 // ── AddMenu ───────────────────────────────────────────────────────────────────
 
-function AddMenu({ onSelect, onClose }) {
+function AddMenu({ onSelect }) {
   return (
     <div className="absolute right-0 top-full mt-1 w-60 bg-white border border-gray-200 rounded-xl shadow-xl z-30 py-1.5 overflow-hidden">
-      {ITEM_TYPES.map(({ type, label, icon: Icon, color, bg, desc }) => (
-        <button
-          key={type}
-          onClick={() => { onSelect(type); onClose() }}
-          className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${bg}`}
-        >
-          <Icon size={16} className={color} />
-          <div>
-            <p className="text-sm font-semibold text-gray-800">{label}</p>
-            <p className="text-xs text-gray-400">{desc}</p>
-          </div>
-        </button>
+      {ITEM_TYPES.map((cfg) => (
+        <DraggableMenuItem key={cfg.type} {...cfg} onSelect={onSelect} />
       ))}
+    </div>
+  )
+}
+
+function DraggableMenuItem({ type, label, icon: Icon, color, bg, desc, onSelect }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `new-${type}`,
+    data: { isNew: true, itemType: type },
+  })
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      onClick={() => onSelect(type)}
+      className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors cursor-grab active:cursor-grabbing select-none ${bg} ${isDragging ? 'opacity-40' : ''}`}
+    >
+      <Icon size={16} className={`${color} flex-shrink-0`} />
+      <div>
+        <p className="text-sm font-semibold text-gray-800">{label}</p>
+        <p className="text-xs text-gray-400">{desc}</p>
+      </div>
+    </div>
+  )
+}
+
+function NewItemDragPreview({ type }) {
+  const cfg = ITEM_TYPES.find(t => t.type === type)
+  if (!cfg) return null
+  const Icon = cfg.icon
+  return (
+    <div className={`flex items-center gap-2 px-3 py-2 rounded-lg bg-white border border-gray-200 shadow-xl text-sm font-semibold pointer-events-none ${cfg.color}`}>
+      <Icon size={14} />
+      {cfg.label}
     </div>
   )
 }
