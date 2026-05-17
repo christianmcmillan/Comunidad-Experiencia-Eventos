@@ -191,6 +191,20 @@ export const teams = [
       { id: 'pos-anf-3', name: 'Coordinador', quantity: 1 },
     ],
   },
+  {
+    id: 'team-experiencia',
+    name: 'Sala de Experiencia',
+    category: 'Servicio',
+    color: '#f97316',
+    serviceTypeIds: ['st-1', 'st-2'],
+    leaders: [],
+    positions: [
+      { id: 'pos-exp-coord',    name: 'Coordinador', quantity: 1 },
+      { id: 'pos-exp-cafe',     name: 'Café',         quantity: 2 },
+      { id: 'pos-exp-snacks',   name: 'Snacks',       quantity: 2 },
+      { id: 'pos-exp-limpieza', name: 'Limpieza',     quantity: 2 },
+    ],
+  },
   // Generaciones
   {
     id: 'team-babies01',
@@ -427,6 +441,7 @@ export const plans = [
       { id: 'oi-23', type: 'spoken',  title: 'Post - Cultura Comunidad',          position: 22, duration: 300,  notes: 'Sáb: Luis y Rhema / Dom: Joa y Paola', attachments: [] },
     ],
     assignments: [],
+    refrigerio: {},
     createdAt: '2026-05-16',
     updatedAt: '2026-05-16',
   },
@@ -456,6 +471,7 @@ export const plans = [
       { id: 'oe-12', type: 'spoken', title: 'Bendición Final', description: '', duration: 180, position: 11 },
     ],
     assignments: [],
+    refrigerio: {},
     createdAt: '2026-05-05',
     updatedAt: '2026-05-11',
   },

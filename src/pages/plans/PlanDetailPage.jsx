@@ -10,6 +10,7 @@ import Badge from '../../components/ui/Badge'
 import OrderBuilder from '../../components/order/OrderBuilder'
 import PlanTeamsTab from '../../components/plans/PlanTeamsTab'
 import PlanNotesTab from '../../components/plans/PlanNotesTab'
+import RefrigerioTab from '../../components/plans/RefrigerioTab'
 
 function formatDates(dates) {
   if (!dates || dates.length === 0) return ''
@@ -20,10 +21,11 @@ function formatDates(dates) {
 }
 
 const TABS = [
-  { key: 'orden',    label: 'Orden'    },
-  { key: 'equipo',   label: 'Equipo'   },
-  { key: 'notas',    label: 'Notas'    },
-  { key: 'archivos', label: 'Archivos' },
+  { key: 'orden',      label: 'Orden'      },
+  { key: 'equipo',     label: 'Equipo'     },
+  { key: 'refrigerio', label: 'Refrigerio' },
+  { key: 'notas',      label: 'Notas'      },
+  { key: 'archivos',   label: 'Archivos'   },
 ]
 
 export default function PlanDetailPage() {
@@ -148,10 +150,11 @@ export default function PlanDetailPage() {
 
       {/* ── Tab content ── */}
       <div className="flex-1 overflow-hidden">
-        {activeTab === 'orden'    && <OrderBuilder planId={id} />}
-        {activeTab === 'equipo'   && <PlanTeamsTab planId={id} />}
-        {activeTab === 'notas'    && <PlanNotesTab planId={id} />}
-        {activeTab === 'archivos' && <FilesTab />}
+        {activeTab === 'orden'      && <OrderBuilder planId={id} />}
+        {activeTab === 'equipo'     && <PlanTeamsTab planId={id} />}
+        {activeTab === 'refrigerio' && <RefrigerioTab planId={id} />}
+        {activeTab === 'notas'      && <PlanNotesTab planId={id} />}
+        {activeTab === 'archivos'   && <FilesTab />}
       </div>
     </div>
   )

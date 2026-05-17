@@ -38,13 +38,37 @@ export default function PlanTeamsTab({ planId }) {
 
   const [selectedTimeId, setSelectedTimeId] = useState(plan?.times?.[0]?.id || 'all')
   const [assigningPos,   setAssigningPos]   = useState(null)
+  const [assignScope,    setAssignScope]    = useState('single')
   const [personSearch,   setPersonSearch]   = useState('')
 
   if (!plan) return null
 
-  const allTimes     = plan.times || []
-  const currentTimes = selectedTimeId === 'all' ? allTimes : allTimes.filter(t => t.id === selectedTimeId)
-  const planTeams    = teams.filter(t => t.serviceTypeIds?.includes(plan.serviceTypeId))
+  const allTimes          = plan.times || []
+  const currentTimes      = selectedTimeId === 'all' ? allTimes : allTimes.filter(t => t.id === selectedTimeId)
+  const planTeams         = teams.filter(t => t.serviceTypeIds?.includes(plan.serviceTypeId))
+  const nonRehearsalTimes = allTimes.filter(t => !t.isRehearsal)
+  const satTimes          = nonRehearsalTimes.filter(t => new Date(t.datetime).getDay() === 6)
+  const sunTimes          = nonRehearsalTimes.filter(t => new Date(t.datetime).getDay() === 0)
+
+  const scopeOptions = [
+    { id: 'single',   label: 'Esta reunión' },
+    ...(satTimes.length >= 2 ? [{ id: 'saturday', label: `Sábado ×${satTimes.length}` }] : []),
+    ...(sunTimes.length >= 2 ? [{ id: 'sunday',   label: `Domingo ×${sunTimes.length}` }] : []),
+    ...(nonRehearsalTimes.length >= 3 ? [{ id: 'all', label: `Las ${nonRehearsalTimes.length} reuniones` }] : []),
+  ]
+
+  function getTargetTimeIds(clickedTimeId) {
+    if (assignScope === 'saturday') return satTimes.map(t => t.id)
+    if (assignScope === 'sunday')   return sunTimes.map(t => t.id)
+    if (assignScope === 'all')      return nonRehearsalTimes.map(t => t.id)
+    return [clickedTimeId]
+  }
+
+  function closeAssigning() {
+    setAssigningPos(null)
+    setAssignScope('single')
+    setPersonSearch('')
+  }
 
   function getAssignments(timeId, teamId, positionId) {
     return (plan.assignments || []).filter(
@@ -53,9 +77,10 @@ export default function PlanTeamsTab({ planId }) {
   }
 
   function handleAssign(timeId, teamId, positionId, personId) {
-    setAssignment(planId, { timeId, teamId, positionId, personId, status: 'invited' })
-    setAssigningPos(null)
-    setPersonSearch('')
+    getTargetTimeIds(timeId).forEach(tid =>
+      setAssignment(planId, { timeId: tid, teamId, positionId, personId, status: 'invited' })
+    )
+    closeAssigning()
   }
 
   function handleOpenSignup(timeId, teamId, positionId) {
@@ -193,6 +218,24 @@ export default function PlanTeamsTab({ planId }) {
                                 {/* Actions */}
                                 {isAssigning ? (
                                   <div className="mt-1">
+                                    {/* Scope chips — only show when plan has multiple service times */}
+                                    {scopeOptions.length > 1 && (
+                                      <div className="flex gap-1 flex-wrap mb-1.5">
+                                        {scopeOptions.map(opt => (
+                                          <button
+                                            key={opt.id}
+                                            onClick={() => setAssignScope(opt.id)}
+                                            className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
+                                              assignScope === opt.id
+                                                ? 'bg-indigo-600 text-white'
+                                                : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                                            }`}
+                                          >
+                                            {opt.label}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    )}
                                     <input
                                       autoFocus
                                       type="text"
@@ -218,7 +261,7 @@ export default function PlanTeamsTab({ planId }) {
                                       })}
                                     </div>
                                     <div className="flex gap-2 mt-1">
-                                      <button onClick={() => { setAssigningPos(null); setPersonSearch('') }} className="text-xs text-gray-400 hover:text-gray-600">Cancelar</button>
+                                      <button onClick={closeAssigning} className="text-xs text-gray-400 hover:text-gray-600">Cancelar</button>
                                       <button
                                         onClick={() => handleOpenSignup(t.id, team.id, pos.id)}
                                         className="text-xs text-blue-500 hover:text-blue-700 flex items-center gap-0.5"

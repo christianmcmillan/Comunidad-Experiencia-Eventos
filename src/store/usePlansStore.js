@@ -23,6 +23,7 @@ const usePlansStore = create(
           assignments: plan.assignments || [],
           notes: plan.notes || [],
           times: plan.times || [],
+          refrigerio: plan.refrigerio || {},
         }],
       })),
 
@@ -170,6 +171,17 @@ const usePlansStore = create(
           : p),
       })),
 
+      toggleRefrigerio: (planId, blockKey, personId) => set((s) => ({
+        plans: s.plans.map((p) => {
+          if (p.id !== planId) return p
+          const cur = (p.refrigerio?.[blockKey] || [])
+          const upd = cur.includes(personId)
+            ? cur.filter((id) => id !== personId)
+            : [...cur, personId]
+          return { ...p, refrigerio: { ...(p.refrigerio || {}), [blockKey]: upd } }
+        }),
+      })),
+
       removeAssignment: (planId, assignmentId) => set((s) => ({
         plans: s.plans.map((p) => p.id === planId
           ? { ...p, assignments: (p.assignments || []).filter((a) => a.id !== assignmentId) }
@@ -207,7 +219,7 @@ const usePlansStore = create(
     }),
     {
       name: 'comunidad-plans',
-      version: 3,
+      version: 4,
       migrate(persisted) {
         // Reset plans to seed data on every version bump
         return { plans: seedPlans, templates: persisted?.templates || [] }
