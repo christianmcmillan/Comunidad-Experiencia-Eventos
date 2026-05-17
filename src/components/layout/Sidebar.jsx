@@ -1,9 +1,10 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Users, Music2, Film, UserCircle, Clock, Grid3X3 } from 'lucide-react'
+import { LayoutDashboard, Users, Music2, Film, UserCircle, Clock, Grid3X3, Radio } from 'lucide-react'
 
 const navItems = [
   { to: '/mi-agenda',   icon: Clock,          label: 'Mi Agenda'   },
   { to: '/dashboard',   icon: LayoutDashboard, label: 'Eventos'     },
+  { to: '/live',        icon: Radio,           label: 'En Vivo'     },
   { to: '/canciones',   icon: Music2,          label: 'Canciones'   },
   { to: '/media',       icon: Film,            label: 'Media'       },
   { to: '/personas',    icon: UserCircle,      label: 'Personas'    },

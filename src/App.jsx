@@ -15,6 +15,7 @@ import SongsPage from './pages/songs/SongsPage'
 import SongDetailPage from './pages/songs/SongDetailPage'
 import MediaPage from './pages/media/MediaPage'
 import MySchedulePage from './pages/MySchedulePage'
+import LiveControlPage from './pages/live/LiveControlPage'
 
 export default function App() {
   return (
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="personas/:id" element={<PersonDetailPage />} />
           <Route path="canciones" element={<SongsPage />} />
           <Route path="canciones/:id" element={<SongDetailPage />} />
+          <Route path="live" element={<LiveControlPage />} />
           <Route path="media" element={<MediaPage />} />
           <Route path="mi-agenda" element={<MySchedulePage />} />
           <Route path="mi-horario" element={<Navigate to="/mi-agenda" replace />} />
